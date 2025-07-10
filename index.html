@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Golpea a Eliud!</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Inter font from Google Fonts */
+        body {
+            font-family: "Inter", sans-serif;
+        }
+
+        /* Custom CSS for doll parts and animations */
+        .doll-part {
+            background-color: #d4b896; /* Color beige/arena de la imagen original del muñeco */
+            border: 2px solid #a38c73; /* Borde más oscuro */
+            border-radius: 9999px; /* Completamente redondeado para la mayoría */
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: #5a4b3d; /* Color de texto para las puntadas */
+            transition: transform 0.1s ease-out; /* Transición suave para hover/active */
+            position: absolute; /* Para posicionar las partes */
+        }
+
+        .doll-part:hover {
+            transform: scale(1.02);
+        }
+        .doll-part:active {
+            transform: scale(0.98);
+        }
+
+        /* Head specific styles with image */
+        #head {
+            overflow: hidden; /* Ensure the image stays within the head bounds */
+            background-color: transparent; /* Make background transparent to show image */
+            border: none; /* Remove border as image will define the face */
+            box-shadow: none; /* Remove shadow as image will define the face */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative; /* Needed for absolute positioning of tears */
+        }
+
+        #eliud-face {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Cover the head area */
+            border-radius: 9999px; /* Keep it rounded like the head */
+            transition: transform 0.1s ease-out; /* Smooth transition for hit animation */
+        }
+
+        /* Stitches (still on the doll's body, not on the face image) */
+        .stitch {
+            position: absolute;
+            background-color: #5a4b3d;
+            width: 2px;
+            height: 8px;
+            transform: rotate(45deg);
+        }
+        .stitch-horizontal {
+            width: 8px;
+            height: 2px;
+            transform: rotate(0deg);
+        }
+
+        /* Tears specific styles */
+        .tear {
+            width: 8px;
+            height: 12px;
+            background-color: #63b3ed; /* Blue color for tears */
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; /* Teardrop shape */
+            position: absolute;
+            opacity: 0; /* Initially hidden */
+            transform: translateY(0);
+            z-index: 20; /* Ensure tears are above the face image */
+        }
+
+        /* Keyframe Animations for hitting */
+        @keyframes hit-impact-head {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(0, -15px) rotate(-5deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        @keyframes hit-impact-body {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(0, 15px) rotate(5deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        @keyframes hit-impact-arm-left {
+            0% { transform: translate(0, 0) rotate(-12deg); }
+            50% { transform: translate(-15px, -5px) rotate(-25deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(-12deg); }
+        }
+
+        @keyframes hit-impact-arm-right {
+            0% { transform: translate(0, 0) rotate(12deg); }
+            50% { transform: translate(15px, -5px) rotate(25deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(12deg); }
+        }
+
+        @keyframes hit-impact-leg-left {
+            0% { transform: translate(0, 0) rotate(-6deg); }
+            50% { transform: translate(-10px, 15px) rotate(-15deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(-6deg); }
+        }
+
+        @keyframes hit-impact-leg-right {
+            0% { transform: translate(0, 0) rotate(6deg); }
+            50% { transform: translate(10px, 15px) rotate(15deg) scale(0.95); }
+            100% { transform: translate(0, 0) rotate(6deg); }
+        }
+
+        /* Keyframe Animation for tears */
+        @keyframes tears-fall {
+            0% { opacity: 0; transform: translateY(0); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(15px); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
+        /* Animation classes */
+        .animate-hit-head { animation: hit-impact-head 0.3s ease-out; }
+        .animate-hit-body { animation: hit-impact-body 0.3s ease-out; }
+        .animate-hit-arm-left { animation: hit-impact-arm-left 0.3s ease-out; }
+        .animate-hit-arm-right { animation: hit-impact-arm-right 0.3s ease-out; }
+        .animate-hit-leg-left { animation: hit-impact-leg-left 0.3s ease-out; }
+        .animate-hit-leg-right { animation: hit-impact-leg-right 0.3s ease-out; }
+
+        .animate-tears { animation: tears-fall 0.8s ease-out; } /* Tears animation duration */
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white rounded-xl shadow-lg p-6 max-w-lg w-full flex flex-col items-center space-y-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4 text-center">¡Golpea a Eliud!</h1>
+
+        <!-- Doll Character Container -->
+        <div class="relative w-64 h-96 md:w-80 md:h-[480px] flex flex-col items-center justify-start">
+            <!-- Head -->
+            <div id="head" class="doll-part w-32 h-32 md:w-40 md:h-40 rounded-full relative z-10 top-0">
+                <!-- Eliud's Face Image -->
+                <!-- *************************************************************************************************** -->
+                <!-- AQUI ES DONDE DEBES REEMPLAZAR LA URL DE LA IMAGEN CON LA URL REAL DE TU FOTO DE ELIUD EN GITHUB. -->
+                <!-- *************************************************************************************************** -->
+                <img id="eliud-face" src="https://cdn.discordapp.com/attachments/1325277501169205370/1392041396030148740/Screenshot_20250629_122931_Discord.jpg?ex=68701153&is=686ebfd3&hm=cae624053bead065a4ed3bff0f421d3cff6d74e1bda21044babf6a194b6022ea&" alt="Cara de Eliud" class="w-full h-full object-cover rounded-full">
+
+                <!-- Tears (now positioned relative to the head) -->
+                <div id="left-tear" class="tear absolute top-[60%] left-[30%] -translate-x-1/2"></div>
+                <div id="right-tear" class="tear absolute top-[60%] right-[30%] translate-x-1/2"></div>
+            </div>
+
+            <!-- Body -->
+            <div id="body" class="doll-part w-48 h-48 md:w-60 md:h-60 rounded-full mt-[-20px] relative z-0">
+                <!-- Stitches on body -->
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+                <div class="absolute bottom-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+            </div>
+
+            <!-- Left Arm -->
+            <div id="left-arm" class="doll-part absolute left-[-20px] top-1/3 w-20 h-40 md:w-24 md:h-48 rounded-full -rotate-12 origin-top-right z-0">
+                <!-- Stitches -->
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+            </div>
+
+            <!-- Right Arm -->
+            <div id="right-arm" class="doll-part absolute right-[-20px] top-1/3 w-20 h-40 md:w-24 md:h-48 rounded-full rotate-12 origin-top-left z-0">
+                <!-- Stitches -->
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+            </div>
+
+            <!-- Left Leg -->
+            <div id="left-leg" class="doll-part absolute bottom-[-40px] left-1/4 -translate-x-1/2 w-20 h-48 md:w-24 md:h-56 rounded-full -rotate-6 origin-top z-0">
+                <!-- Stitches -->
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+            </div>
+
+            <!-- Right Leg -->
+            <div id="right-leg" class="doll-part absolute bottom-[-40px] right-1/4 translate-x-1/2 w-20 h-48 md:w-24 md:h-56 rounded-full rotate-6 origin-top z-0">
+                <!-- Stitches -->
+                <div class="absolute top-1/4 left-1/2 -translate-x-1/2 stitch stitch-horizontal"></div>
+            </div>
+        </div>
+
+        <!-- Text below the character -->
+        <p class="text-2xl md:text-3xl font-extrabold text-amber-900 mt-8 text-center">
+            Hay que golpear a Eliud
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const head = document.getElementById('head');
+            const eliudFace = document.getElementById('eliud-face'); // Get the image element
+            const body = document.getElementById('body');
+            const leftArm = document.getElementById('left-arm');
+            const rightArm = document.getElementById('right-arm');
+            const leftLeg = document.getElementById('left-leg');
+            const rightLeg = document.getElementById('right-leg');
+
+            const leftTear = document.getElementById('left-tear');
+            const rightTear = document.getElementById('right-tear');
+
+            // Function to apply and remove animation class
+            function applyAnimation(element, animationClass) {
+                element.classList.add(animationClass);
+                setTimeout(() => {
+                    element.classList.remove(animationClass);
+                }, 300); // Animation duration for hit is 0.3s
+            }
+
+            // Function to apply and remove tears animation
+            function applyTears(tears, tearClass) {
+                tears.forEach(tear => tear.classList.add(tearClass));
+                setTimeout(() => {
+                    tears.forEach(tear => tear.classList.remove(tearClass));
+                }, 800); // Tears animation duration is 0.8s
+            }
+
+            // Event listener for the head (Eliud's face)
+            head.addEventListener('click', () => {
+                applyAnimation(head, 'animate-hit-head'); // Animate the head container
+                applyTears([leftTear, rightTear], 'animate-tears'); // Trigger tears on head hit
+            });
+
+            // Event listeners for other parts
+            body.addEventListener('click', () => {
+                applyAnimation(body, 'animate-hit-body');
+                // You can add other facial expressions or tears here if desired for body hits
+            });
+
+            leftArm.addEventListener('click', () => {
+                applyAnimation(leftArm, 'animate-hit-arm-left');
+            });
+
+            rightArm.addEventListener('click', () => {
+                applyAnimation(rightArm, 'animate-hit-arm-right');
+            });
+
+            leftLeg.addEventListener('click', () => {
+                applyAnimation(leftLeg, 'animate-hit-leg-left');
+            });
+
+            rightLeg.addEventListener('click', () => {
+                applyAnimation(rightLeg, 'animate-hit-leg-right');
+            });
+        });
+    </script>
+</body>
+</html>
